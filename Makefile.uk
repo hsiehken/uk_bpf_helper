@@ -1,0 +1,85 @@
+# SPDX-License-Identifier: BSD-3-Clause
+#
+# Definitions and utils of bpf helper functions for Unikraft
+#
+# Authors: Kai-Chun Hsieh<k.hsieh@tum.de>
+#
+# Copyright (c) 2023, Kai-Chun Hsieh<k.hsieh@tum.de>. All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions
+# are met:
+#
+# 1. Redistributions of source code must retain the above copyright
+#    notice, this list of conditions and the following disclaimer.
+# 2. Redistributions in binary form must reproduce the above copyright
+#    notice, this list of conditions and the following disclaimer in the
+#    documentation and/or other materials provided with the distribution.
+# 3. Neither the name of the copyright holder nor the names of its
+#    contributors may be used to endorse or promote products derived from
+#    this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+
+################################################################################
+# Library registration
+################################################################################
+$(eval $(call addlib_s,lib_uk_bpf_helper,$(CONFIG_LIB_UK_BPF_HELPER)))
+
+################################################################################
+# Sources
+################################################################################]
+#LIBUBPF_VERSION = main
+#LIBUBPF_URL = https://github.com/iovisor/ubpf/archive/refs/heads/main.zip
+#LIBUBPF_VERSION = 029ea2b6e1e06337ed8fe577b4a4ee09ed0dce7d
+#LIBUBPF_URL = http://github.com/iovisor/ubpf/archive/$(LIBUBPF_VERSION).zip
+#LIBUBPF_SUBDIR = ubpf-$(LIBUBPF_VERSION)
+#LIBUBPF_PATCHDIR = $(LIBUBPF_BASE)/patches
+#$(eval $(call fetch,libubpf,$(LIBUBPF_URL)))
+#$(eval $(call patch,libubpf,$(LIBUBPF_PATCHDIR),$(LIBUBPF_SUBDIR)))
+
+################################################################################
+# Helpers
+################################################################################
+LIB_UK_BPF_HELPER_SRC = $(LIB_UK_BPF_HELPER_BASE)
+
+################################################################################
+# Library includes
+################################################################################
+CINCLUDES-y += -I$(LIB_UK_BPF_HELPER_SRC)/
+
+################################################################################
+# Flags
+################################################################################
+LIB_UK_BPF_HELPER_FLAGS =
+
+# Suppress some warnings to make the build process look neater
+LIB_UK_BPF_HELPER_FLAGS_SUPPRESS =
+
+LIB_UK_BPF_HELPER_CFLAGS-y += $(LIB_UK_BPF_HELPER_FLAGS)
+LIB_UK_BPF_HELPER_CFLAGS-y += $(LIB_UK_BPF_HELPER_FLAGS_SUPPRESS)
+
+################################################################################
+# Glue code
+################################################################################
+# Include paths
+LIB_UK_BPF_HELPER_CINCLUDES-y   += -I$(LIB_UK_BPF_HELPER_SRC)
+LIB_UK_BPF_HELPERSRCS-$(CONFIG_LIB_UK_BPF_HELPER_MAIN_FUNCTION) += $(LIB_UK_BPF_HELPER_BASE)/main.c|unikraft
+
+################################################################################
+# Library sources
+################################################################################
+# LIB_UK_BPF_HELPER_SRCS-y += # Include source files here
+LIB_UK_BPF_HELPER_SRCS-y += $(LIB_UK_BPF_HELPER_SRC)/helper_function_list.c
+LIB_UK_BPF_HELPER_SRCS-y += $(LIB_UK_BPF_HELPER_SRC)/test_helper_function_list.c
+LIB_UK_BPF_HELPER_SRCS-y += $(LIB_UK_BPF_HELPER_SRC)/uk_bpf_helper_utils.c
