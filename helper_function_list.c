@@ -4,13 +4,13 @@
 
 HelperFunctionEntry *helper_function_entry_constructor(
     const UK_UBPF_INDEX_t index, const char *function_name,
-    const void *function_addr, const ebpf_return_type_t ret_type,
+    const void *function_addr, const uk_ebpf_return_type_t ret_type,
     const UK_EBPF_HELPER_ARG_TYPE_NUM_t arg_type_count,
-    const ebpf_argument_type_t arg_types[])
+    const uk_ebpf_argument_type_t arg_types[])
 {
 	HelperFunctionEntry *entry =
 	    malloc(sizeof(HelperFunctionEntry)
-		   + arg_type_count * sizeof(ebpf_argument_type_t));
+		   + arg_type_count * sizeof(uk_ebpf_argument_type_t));
 	if (entry == NULL) {
 		return NULL;
 	}
@@ -54,9 +54,9 @@ HelperFunctionList *helper_function_list_init()
 
 bool helper_function_list_emplace_back(
     HelperFunctionList *self, UK_UBPF_INDEX_t index, const char *functionName,
-    const void *functionAddr, const ebpf_return_type_t retType,
+    const void *functionAddr, const uk_ebpf_return_type_t retType,
     const UK_EBPF_HELPER_ARG_TYPE_NUM_t argTypeCount,
-    const ebpf_argument_type_t argTypes[])
+    const uk_ebpf_argument_type_t argTypes[])
 {
 
 	HelperFunctionEntry *entry = helper_function_entry_constructor(

@@ -162,8 +162,8 @@ HelperFunctionList *unmarshall_bpf_helper_definitions(const char *input)
 					continue;
 				}
 
-				ebpf_argument_type_t *dummy_args = calloc(
-				    num_args, sizeof(ebpf_argument_type_t));
+                uk_ebpf_argument_type_t *dummy_args = calloc(
+				    num_args, sizeof(uk_ebpf_argument_type_t));
 				if (dummy_args == NULL) {
 					state = STATE_ERROR;
 					continue;

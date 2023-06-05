@@ -14,9 +14,9 @@ typedef unsigned int UK_UBPF_INDEX_t;
 
 typedef struct HelperFunctionSignature {
 	char *m_function_name;
-	ebpf_return_type_t m_return_type;
+    uk_ebpf_return_type_t m_return_type;
 	UK_EBPF_HELPER_ARG_TYPE_NUM_t m_num_args;
-	ebpf_argument_type_t m_arg_types[];
+    uk_ebpf_argument_type_t m_arg_types[];
 } HelperFunctionSignature;
 
 typedef struct HelperFunctionEntry HelperFunctionEntry;
@@ -41,9 +41,9 @@ HelperFunctionList *helper_function_list_init();
 
 bool helper_function_list_emplace_back(
     HelperFunctionList *self, UK_UBPF_INDEX_t index, const char *function_name,
-    const void *function_addr, ebpf_return_type_t ret_type,
+    const void *function_addr, uk_ebpf_return_type_t ret_type,
     UK_EBPF_HELPER_ARG_TYPE_NUM_t arg_type_count,
-    const ebpf_argument_type_t arg_types[]);
+    const uk_ebpf_argument_type_t arg_types[]);
 
 void helper_function_list_remove_elem(HelperFunctionList *self,
 				      const char *function_name);
