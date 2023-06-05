@@ -1,0 +1,20 @@
+*.swp
+*.swo
+build
+compile_commands.json
+.direnv
+.cache
+.config.old
+*.o
+apps/nginx/nginx-native/
+__pycache__/
+misc/tests/measurements/
+
+.ccls-cache/
+.envrc
+
+# Jetbrains
+.idea
+
+# CMake
+cmake-build-*/
