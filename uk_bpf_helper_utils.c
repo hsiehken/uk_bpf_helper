@@ -155,7 +155,7 @@ HelperFunctionList *unmarshall_bpf_helper_definitions(const char *input)
 				// peek number of arguments
 				size_t num_args =
 				    peek_argument_number(&buffer[index]);
-				if (num_args == -1) {
+				if (num_args == (size_t)-1) {
 					// there are invalid characters in the
 					// argument list
 					state = STATE_ERROR;
