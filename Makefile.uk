@@ -81,5 +81,4 @@ LIBUKBPFHELPERSRCS-$(CONFIG_LIBUKBPFHELPER_MAIN_FUNCTION) += $(LIBUKBPFHELPER_BA
 ################################################################################
 # LIBUKBPFHELPER_SRCS-y += # Include source files here
 LIBUKBPFHELPER_SRCS-y += $(LIBUKBPFHELPER_SRC)/helper_function_list.c
-LIBUKBPFHELPER_SRCS-y += $(LIBUKBPFHELPER_SRC)/test_helper_function_list.c
 LIBUKBPFHELPER_SRCS-y += $(LIBUKBPFHELPER_SRC)/uk_bpf_helper_utils.c
