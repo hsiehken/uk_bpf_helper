@@ -34,7 +34,7 @@
 ################################################################################
 # Library registration
 ################################################################################
-$(eval $(call addlib_s,lib_uk_bpf_helper,$(CONFIG_LIB_UK_BPF_HELPER)))
+$(eval $(call addlib_s,libukbpfhelper,$(CONFIG_LIBUKBPFHELPER)))
 
 ################################################################################
 # Sources
@@ -51,35 +51,35 @@ $(eval $(call addlib_s,lib_uk_bpf_helper,$(CONFIG_LIB_UK_BPF_HELPER)))
 ################################################################################
 # Helpers
 ################################################################################
-LIB_UK_BPF_HELPER_SRC = $(LIB_UK_BPF_HELPER_BASE)
+LIBUKBPFHELPER_SRC = $(LIBUKBPFHELPER_BASE)
 
 ################################################################################
 # Library includes
 ################################################################################
-CINCLUDES-y += -I$(LIB_UK_BPF_HELPER_SRC)/
+CINCLUDES-y += -I$(LIBUKBPFHELPER_SRC)/
 
 ################################################################################
 # Flags
 ################################################################################
-LIB_UK_BPF_HELPER_FLAGS =
+LIBUKBPFHELPER_FLAGS =
 
 # Suppress some warnings to make the build process look neater
-LIB_UK_BPF_HELPER_FLAGS_SUPPRESS =
+LIBUKBPFHELPER_FLAGS_SUPPRESS =
 
-LIB_UK_BPF_HELPER_CFLAGS-y += $(LIB_UK_BPF_HELPER_FLAGS)
-LIB_UK_BPF_HELPER_CFLAGS-y += $(LIB_UK_BPF_HELPER_FLAGS_SUPPRESS)
+LIBUKBPFHELPER_CFLAGS-y += $(LIBUKBPFHELPER_FLAGS)
+LIBUKBPFHELPER_CFLAGS-y += $(LIBUKBPFHELPER_FLAGS_SUPPRESS)
 
 ################################################################################
 # Glue code
 ################################################################################
 # Include paths
-LIB_UK_BPF_HELPER_CINCLUDES-y   += -I$(LIB_UK_BPF_HELPER_SRC)
-LIB_UK_BPF_HELPERSRCS-$(CONFIG_LIB_UK_BPF_HELPER_MAIN_FUNCTION) += $(LIB_UK_BPF_HELPER_BASE)/main.c|unikraft
+LIBUKBPFHELPER_CINCLUDES-y   += -I$(LIBUKBPFHELPER_SRC)
+LIBUKBPFHELPERSRCS-$(CONFIG_LIBUKBPFHELPER_MAIN_FUNCTION) += $(LIBUKBPFHELPER_BASE)/main.c|unikraft
 
 ################################################################################
 # Library sources
 ################################################################################
-# LIB_UK_BPF_HELPER_SRCS-y += # Include source files here
-LIB_UK_BPF_HELPER_SRCS-y += $(LIB_UK_BPF_HELPER_SRC)/helper_function_list.c
-LIB_UK_BPF_HELPER_SRCS-y += $(LIB_UK_BPF_HELPER_SRC)/test_helper_function_list.c
-LIB_UK_BPF_HELPER_SRCS-y += $(LIB_UK_BPF_HELPER_SRC)/uk_bpf_helper_utils.c
+# LIBUKBPFHELPER_SRCS-y += # Include source files here
+LIBUKBPFHELPER_SRCS-y += $(LIBUKBPFHELPER_SRC)/helper_function_list.c
+LIBUKBPFHELPER_SRCS-y += $(LIBUKBPFHELPER_SRC)/test_helper_function_list.c
+LIBUKBPFHELPER_SRCS-y += $(LIBUKBPFHELPER_SRC)/uk_bpf_helper_utils.c
