@@ -16,9 +16,9 @@ void test_create_new_list() {
 
 void test_push_back_work() {
 	HelperFunctionList *list = helper_function_list_init();
-	ebpf_argument_type_t dummy_arg_types[] = {4, 5, 6};
+	uk_ebpf_argument_type_t dummy_arg_types[] = {4, 5, 6};
 	assert(helper_function_list_emplace_back(list, 1, "test", (void *) 42, 7,
-					      sizeof(dummy_arg_types) / sizeof(ebpf_argument_type_t), dummy_arg_types));
+					      sizeof(dummy_arg_types) / sizeof(uk_ebpf_argument_type_t), dummy_arg_types));
 
 	assert(list->m_length == 1);
 	assert(list->m_head != NULL && list->m_head == list->m_tail);
@@ -37,7 +37,7 @@ void test_push_back_work() {
 
 HelperFunctionList *helper_generate_dummy_data() {
 	HelperFunctionList *list = helper_function_list_init();
-	ebpf_argument_type_t dummy_arg_types[] = {4, 5, 6};
+    uk_ebpf_argument_type_t dummy_arg_types[] = {4, 5, 6};
 
 	assert(helper_function_list_emplace_back(list, 11, "test0", (void *) 42, 0, sizeof(dummy_arg_types), dummy_arg_types));
 	assert(helper_function_list_emplace_back(list, 12, "test1", (void *) 42, 1, sizeof(dummy_arg_types), dummy_arg_types));
