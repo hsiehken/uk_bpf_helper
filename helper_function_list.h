@@ -35,23 +35,9 @@ typedef struct HelperFunctionList {
 	size_t m_length;
 	HelperFunctionEntry *m_head;
 	HelperFunctionEntry *m_tail;
-
-	HelperFunctionEntry *(*m_entry_constructor)(
-	    UK_UBPF_INDEX_t index, const char *function_name,
-	    const void *function_addr, const ebpf_return_type_t ret_type,
-	    const UK_EBPF_HELPER_ARG_TYPE_NUM_t argTypeCount,
-	    const ebpf_argument_type_t argTypes[]);
-
-	void (*m_entry_destructor)(struct HelperFunctionEntry *entry);
 } HelperFunctionList;
 
-HelperFunctionList *helper_function_list_init(
-    HelperFunctionEntry *(*entry_constructor)(
-	UK_UBPF_INDEX_t index, const char *function_name,
-	const void *function_addr, const ebpf_return_type_t ret_type,
-	const UK_EBPF_HELPER_ARG_TYPE_NUM_t arg_type_count,
-	const ebpf_argument_type_t arg_types[]),
-    void (*destruct_entry)(struct HelperFunctionEntry *));
+HelperFunctionList *helper_function_list_init();
 
 bool helper_function_list_emplace_back(
     HelperFunctionList *self, UK_UBPF_INDEX_t index, const char *function_name,
