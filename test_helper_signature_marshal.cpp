@@ -29,11 +29,11 @@ void assert_empty_arg_list() {
     buffer.clear();
 
     HelperFunctionList *list = helper_function_list_init();
-    helper_function_list_emplace_back(list, 0, "test", nullptr,
+    helper_function_list_emplace_back(list, 1, "test", nullptr,
                                       UK_EBPF_RETURN_TYPE_INTEGER, 0, nullptr);
 
     marshall_bpf_helper_definitions(list, append_result);
-    assert("test()->" + std::to_string(UK_EBPF_RETURN_TYPE_INTEGER) == buffer);
+    assert("1:test()->" + std::to_string(UK_EBPF_RETURN_TYPE_INTEGER) == buffer);
 
     helper_function_list_destroy(list);
 }
@@ -47,7 +47,7 @@ void assert_many_args() {
             UK_EBPF_ARGUMENT_TYPE_PTR_TO_READABLE_MEM_OR_NULL,
             UK_EBPF_ARGUMENT_TYPE_CONST_SIZE,
             UK_EBPF_ARGUMENT_TYPE_CONST_SIZE_OR_ZERO};
-    helper_function_list_emplace_back(list, 0, "test", nullptr,
+    helper_function_list_emplace_back(list, 1, "test", nullptr,
                                       UK_EBPF_RETURN_TYPE_UNSUPPORTED, 3,
                                       arg_types);
 
@@ -55,7 +55,7 @@ void assert_many_args() {
     std::stringstream stream;
     stream << std::hex << UK_EBPF_ARGUMENT_TYPE_PTR_TO_READABLE_MEM_OR_NULL;
 
-    assert("test(" + stream.str() + ","
+    assert("1:test(" + stream.str() + ","
            + std::to_string(UK_EBPF_ARGUMENT_TYPE_CONST_SIZE) + ","
            + std::to_string(UK_EBPF_ARGUMENT_TYPE_CONST_SIZE_OR_ZERO)
            + ")->" + std::to_string(UK_EBPF_RETURN_TYPE_UNSUPPORTED)
@@ -68,20 +68,20 @@ void assert_many_functions() {
     buffer.clear();
 
     HelperFunctionList *list = helper_function_list_init();
-    helper_function_list_emplace_back(list, 0, "test", nullptr,
+    helper_function_list_emplace_back(list, 1, "test", nullptr,
                                       UK_EBPF_RETURN_TYPE_INTEGER, 0, nullptr);
 
     uk_ebpf_argument_type_t arg_types[] = {
             UK_EBPF_ARGUMENT_TYPE_ANYTHING,
             UK_EBPF_ARGUMENT_TYPE_CONST_SIZE,
             UK_EBPF_ARGUMENT_TYPE_CONST_SIZE_OR_ZERO};
-    helper_function_list_emplace_back(list, 0, "test2", nullptr,
+    helper_function_list_emplace_back(list, 2, "test2", nullptr,
                                       UK_EBPF_RETURN_TYPE_UNSUPPORTED, 3,
                                       arg_types);
 
     marshall_bpf_helper_definitions(list, append_result);
-    assert("test()->" + std::to_string(UK_EBPF_RETURN_TYPE_INTEGER) + ";"
-           + "test2(" + std::to_string(UK_EBPF_ARGUMENT_TYPE_ANYTHING)
+    assert("1:test()->" + std::to_string(UK_EBPF_RETURN_TYPE_INTEGER) + ";"
+           + "2:test2(" + std::to_string(UK_EBPF_ARGUMENT_TYPE_ANYTHING)
            + "," + std::to_string(UK_EBPF_ARGUMENT_TYPE_CONST_SIZE) + ","
            + std::to_string(UK_EBPF_ARGUMENT_TYPE_CONST_SIZE_OR_ZERO)
            + ")->" + std::to_string(UK_EBPF_RETURN_TYPE_UNSUPPORTED)
@@ -97,10 +97,15 @@ void assert_unmarshal_empty() {
 
     assert(result != nullptr);
     helper_function_list_destroy(result);
+}
 
-    auto *result2 = unmarshall_bpf_helper_definitions("test()->a");
+void assert_unmarshal_hex_ret_type() {
+    auto *result2 = unmarshall_bpf_helper_definitions("1:test()->a");
     assert(result2 != nullptr);
     assert(result2->m_head->m_function_signature.m_return_type == (uk_ebpf_return_type_t) 10);
+    assert(result2->m_head->m_index == 1);
+
+    helper_function_list_destroy(result2);
 }
 
 void assert_unmarshal_empty_arg_list() {
@@ -110,6 +115,7 @@ void assert_unmarshal_empty_arg_list() {
 
     assert(result != nullptr);
     assert(result->m_length == 1);
+    assert(result->m_tail->m_index == 1);
     assert(
             strcmp(result->m_tail->m_function_signature.m_function_name, "test")
             == 0);
@@ -127,6 +133,7 @@ void assert_unmarshal_many_args_list() {
 
     assert(result != nullptr);
     assert(result->m_length == 1);
+    assert(result->m_tail->m_index == 1);
     assert(
             strcmp(result->m_tail->m_function_signature.m_function_name, "test")
             == 0);
@@ -151,6 +158,7 @@ void assert_unmarshal_many_functions_list() {
     assert(result != nullptr);
     assert(result->m_length == 2);
 
+    assert(result->m_head->m_index == 1);
     assert(
             strcmp(result->m_head->m_function_signature.m_function_name, "test")
             == 0);
@@ -158,6 +166,7 @@ void assert_unmarshal_many_functions_list() {
            == UK_EBPF_RETURN_TYPE_INTEGER);
     assert(result->m_head->m_function_signature.m_num_args == 0);
 
+    assert(result->m_tail->m_index == 2);
     assert(strcmp(result->m_tail->m_function_signature.m_function_name,
                   "test2")
            == 0);
@@ -181,83 +190,118 @@ void assert_reject_null_input() {
 
 void assert_reject_empty_function_name() {
     buffer.clear();
-    buffer.append("test()->0;()->1");
+    buffer.append("1:test()->0;2:()->1");
+    assert(unmarshall_bpf_helper_definitions(buffer.c_str()) == nullptr);
+}
+
+void assert_reject_empty_index() {
+    buffer.clear();
+    buffer.append("1:test()->0;:()->1");
     assert(unmarshall_bpf_helper_definitions(buffer.c_str()) == nullptr);
 }
 
 void assert_reject_unexpected_eof() {
     buffer.clear();
-    buffer.append("test()->0;test2()->");
+    buffer.append("0:test()->0;1:test2()->");
     assert(unmarshall_bpf_helper_definitions(buffer.c_str()) == nullptr);
 
     buffer.clear();
-    buffer.append("test()->0;test2()-");
+    buffer.append("0:test()->0;1:test2()-");
     assert(unmarshall_bpf_helper_definitions(buffer.c_str()) == nullptr);
 
     buffer.clear();
-    buffer.append("test()->0;test2()");
+    buffer.append("0:test()->0;1:test2()");
     assert(unmarshall_bpf_helper_definitions(buffer.c_str()) == nullptr);
 
     buffer.clear();
-    buffer.append("test()->0;test2(");
+    buffer.append("0:test()->0;1:test2(");
     assert(unmarshall_bpf_helper_definitions(buffer.c_str()) == nullptr);
 
     buffer.clear();
-    buffer.append("test()->0;test2");
+    buffer.append("0:test()->0;1:test2");
     assert(unmarshall_bpf_helper_definitions(buffer.c_str()) == nullptr);
 
     buffer.clear();
-    buffer.append("test()->0;");
+    buffer.append("0:test()->0;1:");
+    assert(unmarshall_bpf_helper_definitions(buffer.c_str()) == nullptr);
+
+    buffer.clear();
+    buffer.append("0:test()->0;");
     assert(unmarshall_bpf_helper_definitions(buffer.c_str()) == nullptr);
 }
 
 void assert_reject_broken_syntax() {
     buffer.clear();
-    buffer.append("test()-0;test2()->0");
+    buffer.append("0:test()-0;1:test2()->0");
     assert(unmarshall_bpf_helper_definitions(buffer.c_str()) == nullptr);
 
     buffer.clear();
-    buffer.append("test)->0;test2()->0");
+    buffer.append("0:test)->0;1:test2()->0");
     assert(unmarshall_bpf_helper_definitions(buffer.c_str()) == nullptr);
 
     buffer.clear();
-    buffer.append("test((->0;test2()->0");
+    buffer.append("0:test((->0;1:test2()->0");
     assert(unmarshall_bpf_helper_definitions(buffer.c_str()) == nullptr);
 
     buffer.clear();
-    buffer.append("test)(->0;test2()->0");
+    buffer.append("0:test)(->0;1:test2()->0");
     assert(unmarshall_bpf_helper_definitions(buffer.c_str()) == nullptr);
 
     buffer.clear();
-    buffer.append("test()-->0;test2()->0");
+    buffer.append("0:test()-->0;0:test2()->0");
     assert(unmarshall_bpf_helper_definitions(buffer.c_str()) == nullptr);
 
     buffer.clear();
-    buffer.append("test()->>0;test2()->0");
+    buffer.append("0:test()->>0;0:test2()->0");
     assert(unmarshall_bpf_helper_definitions(buffer.c_str()) == nullptr);
 
     buffer.clear();
-    buffer.append("t-est(");
+    buffer.append("0:t-est(");
     assert(unmarshall_bpf_helper_definitions(buffer.c_str()) == nullptr);
 
     buffer.clear();
-    buffer.append("t>est(");
+    buffer.append("0:t>est(");
     assert(unmarshall_bpf_helper_definitions(buffer.c_str()) == nullptr);
 
     buffer.clear();
-    buffer.append("t)est(");
+    buffer.append("0:t)est(");
     assert(unmarshall_bpf_helper_definitions(buffer.c_str()) == nullptr);
 
     buffer.clear();
-    buffer.append("t;est(");
+    buffer.append("0:t:est(");
+    assert(unmarshall_bpf_helper_definitions(buffer.c_str()) == nullptr);
+
+
+    buffer.clear();
+    buffer.append("0:t;est(");
     assert(unmarshall_bpf_helper_definitions(buffer.c_str()) == nullptr);
 
     buffer.clear();
-    buffer.append("t,est(");
+    buffer.append("0:t,est(");
     assert(unmarshall_bpf_helper_definitions(buffer.c_str()) == nullptr);
 
     buffer.clear();
-    buffer.append("test()>-0");
+    buffer.append("0:test()>-0");
+    assert(unmarshall_bpf_helper_definitions(buffer.c_str()) == nullptr);
+
+    buffer.clear();
+    buffer.append("0:test()>0");
+    assert(unmarshall_bpf_helper_definitions(buffer.c_str()) == nullptr);
+
+    buffer.clear();
+    buffer.append("0test()>0");
+    assert(unmarshall_bpf_helper_definitions(buffer.c_str()) == nullptr);
+
+    buffer.clear();
+    buffer.append("0;test()>0");
+    assert(unmarshall_bpf_helper_definitions(buffer.c_str()) == nullptr);
+
+    buffer.clear();
+    buffer.append(":test()>0");
+    assert(unmarshall_bpf_helper_definitions(buffer.c_str()) == nullptr);
+
+    buffer.clear();
+    buffer.append(";test()>0");
     assert(unmarshall_bpf_helper_definitions(buffer.c_str()) == nullptr);
 
     buffer.clear();
@@ -267,70 +311,84 @@ void assert_reject_broken_syntax() {
 
 void assert_reject_invalid_return_type() {
     buffer.clear();
-    buffer.append("test)->");
+    buffer.append("0:test)->");
     assert(unmarshall_bpf_helper_definitions(buffer.c_str()) == nullptr);
 
     buffer.clear();
-    buffer.append("test)->x");
+    buffer.append("0:test)->x");
     assert(unmarshall_bpf_helper_definitions(buffer.c_str()) == nullptr);
 
     buffer.clear();
-    buffer.append("test)->xxx");
+    buffer.append("0:test)->xxx");
     assert(unmarshall_bpf_helper_definitions(buffer.c_str()) == nullptr);
 
     buffer.clear();
-    buffer.append("test()->+");
+    buffer.append("0:test()->+");
     assert(unmarshall_bpf_helper_definitions(buffer.c_str()) == nullptr);
 
     buffer.clear();
-    buffer.append("test()->A");
+    buffer.append("0:test()->A");
     assert(unmarshall_bpf_helper_definitions(buffer.c_str()) == nullptr);
 
     buffer.clear();
-    buffer.append("test()->x");
+    buffer.append("0:test()->x");
     assert(unmarshall_bpf_helper_definitions(buffer.c_str()) == nullptr);
 
     buffer.clear();
-    buffer.append("test()");
+    buffer.append("0:test()");
     assert(unmarshall_bpf_helper_definitions(buffer.c_str()) == nullptr);
 
     buffer.clear();
-    buffer.append("test()-");
+    buffer.append("0:test()-");
     assert(unmarshall_bpf_helper_definitions(buffer.c_str()) == nullptr);
 
     buffer.clear();
-    buffer.append("test()->");
+    buffer.append("0:test()->");
     assert(unmarshall_bpf_helper_definitions(buffer.c_str()) == nullptr);
 
     buffer.clear();
-    buffer.append("test()->;test2()->0");
+    buffer.append("0:test()->;0:test2()->0");
     assert(unmarshall_bpf_helper_definitions(buffer.c_str()) == nullptr);
 }
 
 void assert_reject_invalid_arg_type() {
     buffer.clear();
-    buffer.append("test(,)->0");
+    buffer.append("0:test(,)->0");
     assert(unmarshall_bpf_helper_definitions(buffer.c_str()) == nullptr);
 
     buffer.clear();
-    buffer.append("test(0,)->0");
+    buffer.append("0:test(0,)->0");
     assert(unmarshall_bpf_helper_definitions(buffer.c_str()) == nullptr);
 
     buffer.clear();
-    buffer.append("test(,0)->0");
+    buffer.append("0:test(,0)->0");
     assert(unmarshall_bpf_helper_definitions(buffer.c_str()) == nullptr);
 
     buffer.clear();
-    buffer.append("test(abc,xxx)->0");
+    buffer.append("0:test(abc,xxx)->0");
     assert(unmarshall_bpf_helper_definitions(buffer.c_str()) == nullptr);
 
     buffer.clear();
     buffer.append(
-            "test(fffffffffffffffff)->0"); // overflow, not a valid uint64_t
+            "0:test(fffffffffffffffff)->0"); // overflow, not a valid uint64_t
     assert(unmarshall_bpf_helper_definitions(buffer.c_str()) == nullptr);
 
     buffer.clear();
-    buffer.append("test->0");
+    buffer.append("0:test->0");
+    assert(unmarshall_bpf_helper_definitions(buffer.c_str()) == nullptr);
+}
+
+void assert_reject_invalid_index() {
+    buffer.clear();
+    buffer.append("x:test()->0");
+    assert(unmarshall_bpf_helper_definitions(buffer.c_str()) == nullptr);
+
+    buffer.clear();
+    buffer.append("aaaaaaaaa:test()->0");
+    assert(unmarshall_bpf_helper_definitions(buffer.c_str()) == nullptr);
+
+    buffer.clear();
+    buffer.append("A:test()->0");
     assert(unmarshall_bpf_helper_definitions(buffer.c_str()) == nullptr);
 }
 
@@ -341,6 +399,7 @@ int main() {
     assert_many_functions();
 
     assert_unmarshal_empty();
+    assert_unmarshal_hex_ret_type();
     assert_unmarshal_empty_arg_list();
     assert_unmarshal_many_args_list();
     assert_unmarshal_many_functions_list();
@@ -351,6 +410,7 @@ int main() {
     assert_reject_broken_syntax();
     assert_reject_invalid_return_type();
     assert_reject_invalid_arg_type();
+    assert_reject_invalid_index();
 
     exit(EXIT_SUCCESS);
 }
