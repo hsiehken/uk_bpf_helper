@@ -35,6 +35,10 @@ static char *utoa_16(unsigned value, char *str) {
 void marshall_bpf_helper_definitions(HelperFunctionList *instance,
                                      void (*append_result)(const char *)) {
     // for hex number in the 64 bit space, max length of an integer is 16
+    if(instance == NULL) {
+        return;
+    }
+
     char buffer[16 + 1];
 
     for (HelperFunctionEntry *entry = instance->m_head; entry != NULL;
