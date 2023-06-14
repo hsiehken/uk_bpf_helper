@@ -394,79 +394,79 @@ void assert_reject_invalid_index() {
     assert(unmarshall_bpf_helper_definitions(buffer.c_str()) == nullptr);
 }
 
-void assert_empty_group_list() {
+void assert_empty_prog_type_list() {
     buffer.clear();
 
-    auto *list = helper_group_list_init();
+    auto *list = bpf_prog_type_list_init();
 
-    marshall_bpf_helper_groups(list, append_result);
+    marshall_bpf_prog_types(list, append_result);
     assert(buffer.empty());
 
-    helper_group_destroy(list);
+    bpf_prog_type_list_destroy(list);
 }
 
-void assert_null_group_list() {
+void assert_null_prog_type_list() {
     buffer.clear();
 
-    marshall_bpf_helper_groups(nullptr, append_result);
+    marshall_bpf_prog_types(nullptr, append_result);
     assert(buffer.empty());
 }
 
-void assert_group_list_w_one_element() {
+void assert_prog_type_list_w_one_element() {
     buffer.clear();
 
-    auto *list = helper_group_list_init();
+    auto *list = bpf_prog_type_list_init();
 
     UK_UBPF_INDEX_t indexes[] = {1, 2, 3};
-    helper_group_list_emplace_back(list, "test", 3,  indexes);
+    bpf_prog_type_list_emplace_back(list, "test", 3, indexes);
 
-    marshall_bpf_helper_groups(list, append_result);
+    marshall_bpf_prog_types(list, append_result);
     assert("test:1,2,3" == buffer);
 
-    helper_group_destroy(list);
+    bpf_prog_type_list_destroy(list);
 }
 
-void assert_group_list_w_multi_element() {
+void assert_prog_type_list_w_multi_element() {
     buffer.clear();
 
-    auto *list = helper_group_list_init();
+    auto *list = bpf_prog_type_list_init();
 
     UK_UBPF_INDEX_t indexes[] = {1, 2, 3};
-    helper_group_list_emplace_back(list, "test", 3, indexes);
+    bpf_prog_type_list_emplace_back(list, "test", 3, indexes);
 
     UK_UBPF_INDEX_t indexes2[] = {4, 5, 6};
-    helper_group_list_emplace_back(list, "test2", 3, indexes2);
+    bpf_prog_type_list_emplace_back(list, "test2", 3, indexes2);
 
-    marshall_bpf_helper_groups(list, append_result);
+    marshall_bpf_prog_types(list, append_result);
     assert("test:1,2,3;test2:4,5,6" == buffer);
 
-    helper_group_destroy(list);
+    bpf_prog_type_list_destroy(list);
 }
 
 
-void assert_unmarshal_empty_group() {
-    assert_empty_group_list();
+void assert_unmarshal_empty_prog_type() {
+    assert_empty_prog_type_list();
 
-    auto *list = unmarshall_bpf_helper_groups(buffer.c_str());
+    auto *list = unmarshall_bpf_prog_types(buffer.c_str());
     assert(list != nullptr);
 
     assert(list->m_length == 0);
     assert(list->m_head == nullptr);
     assert(list->m_tail == nullptr);
 
-    helper_group_destroy(list);
+    bpf_prog_type_list_destroy(list);
 }
 
 
-void assert_unmarshal_group_null() {
-    auto *list = unmarshall_bpf_helper_groups(nullptr);
+void assert_unmarshal_prog_type_null() {
+    auto *list = unmarshall_bpf_prog_types(nullptr);
     assert(list == nullptr);
 }
 
-void assert_unmarshal_group_w_one() {
-    assert_group_list_w_one_element();
+void assert_unmarshal_prog_type_w_one() {
+    assert_prog_type_list_w_one_element();
 
-    auto *list = unmarshall_bpf_helper_groups(buffer.c_str());
+    auto *list = unmarshall_bpf_prog_types(buffer.c_str());
     assert(list != nullptr);
     assert(list->m_head != nullptr);
     assert(list->m_tail != nullptr);
@@ -474,18 +474,18 @@ void assert_unmarshal_group_w_one() {
 
     assert(list->m_tail->m_next == nullptr);
     assert(list->m_tail->m_length == 3);
-    assert(strcmp(list->m_tail->m_group_name, "test") == 0);
+    assert(strcmp(list->m_tail->m_prog_type_name, "test") == 0);
     for (size_t index = 0; index < list->m_tail->m_length; index++) {
-        assert(list->m_tail->m_helper_indexes[index] == index + 1);
+        assert(list->m_tail->m_allowed_helper_indexes[index] == index + 1);
     }
 
-    helper_group_destroy(list);
+    bpf_prog_type_list_destroy(list);
 }
 
-void assert_unmarshal_group_w_multi() {
-    assert_group_list_w_multi_element();
+void assert_unmarshal_prog_type_w_multi() {
+    assert_prog_type_list_w_multi_element();
 
-    auto *list = unmarshall_bpf_helper_groups(buffer.c_str());
+    auto *list = unmarshall_bpf_prog_types(buffer.c_str());
     assert(list != nullptr);
     assert(list->m_head != nullptr);
     assert(list->m_tail != nullptr);
@@ -493,23 +493,23 @@ void assert_unmarshal_group_w_multi() {
 
     assert(list->m_head->m_next == list->m_tail);
     assert(list->m_head->m_length == 3);
-    assert(strcmp(list->m_head->m_group_name, "test") == 0);
+    assert(strcmp(list->m_head->m_prog_type_name, "test") == 0);
     for (size_t index = 0; index < list->m_head->m_length; index++) {
-        assert(list->m_head->m_helper_indexes[index] == index + 1);
+        assert(list->m_head->m_allowed_helper_indexes[index] == index + 1);
     }
 
     assert(list->m_tail->m_next == nullptr);
     assert(list->m_tail->m_length == 3);
-    assert(strcmp(list->m_tail->m_group_name, "test2") == 0);
+    assert(strcmp(list->m_tail->m_prog_type_name, "test2") == 0);
     for (size_t index = 0; index < list->m_tail->m_length; index++) {
-        assert(list->m_tail->m_helper_indexes[index] == index + 4);
+        assert(list->m_tail->m_allowed_helper_indexes[index] == index + 4);
     }
 
-    helper_group_destroy(list);
+    bpf_prog_type_list_destroy(list);
 }
 
-void assert_unmarshal_accept_empty_group() {
-    auto *list = unmarshall_bpf_helper_groups("test:");
+void assert_unmarshal_accept_empty_prog_type() {
+    auto *list = unmarshall_bpf_prog_types("test:");
     assert(list != nullptr);
     assert(list->m_head != nullptr);
     assert(list->m_tail != nullptr);
@@ -517,10 +517,10 @@ void assert_unmarshal_accept_empty_group() {
 
     assert(list->m_head->m_next == nullptr);
     assert(list->m_head->m_length == 0);
-    assert(strcmp(list->m_head->m_group_name, "test") == 0);
-    assert(list->m_head->m_helper_indexes == nullptr);
+    assert(strcmp(list->m_head->m_prog_type_name, "test") == 0);
+    assert(list->m_head->m_allowed_helper_indexes == nullptr);
 
-    auto *list2 = unmarshall_bpf_helper_groups("test:;test2:");
+    auto *list2 = unmarshall_bpf_prog_types("test:;test2:");
     assert(list2 != nullptr);
     assert(list2->m_head != nullptr);
     assert(list2->m_tail != nullptr);
@@ -528,15 +528,15 @@ void assert_unmarshal_accept_empty_group() {
 
     assert(list2->m_head->m_next == list2->m_tail);
     assert(list2->m_head->m_length == 0);
-    assert(strcmp(list2->m_head->m_group_name, "test") == 0);
-    assert(list2->m_head->m_helper_indexes == nullptr);
+    assert(strcmp(list2->m_head->m_prog_type_name, "test") == 0);
+    assert(list2->m_head->m_allowed_helper_indexes == nullptr);
 
     assert(list2->m_tail->m_next == nullptr);
     assert(list2->m_tail->m_length == 0);
-    assert(strcmp(list2->m_tail->m_group_name, "test2") == 0);
-    assert(list2->m_tail->m_helper_indexes == nullptr);
+    assert(strcmp(list2->m_tail->m_prog_type_name, "test2") == 0);
+    assert(list2->m_tail->m_allowed_helper_indexes == nullptr);
 
-    auto *list3 = unmarshall_bpf_helper_groups("test:1,2,3;test2:");
+    auto *list3 = unmarshall_bpf_prog_types("test:1,2,3;test2:");
     assert(list3 != nullptr);
     assert(list3->m_head != nullptr);
     assert(list3->m_tail != nullptr);
@@ -544,18 +544,18 @@ void assert_unmarshal_accept_empty_group() {
 
     assert(list3->m_head->m_next == list3->m_tail);
     assert(list3->m_head->m_length == 3);
-    assert(strcmp(list3->m_head->m_group_name, "test") == 0);
-    assert(list3->m_head->m_helper_indexes != nullptr);
-    assert(list3->m_head->m_helper_indexes[0] == 1);
-    assert(list3->m_head->m_helper_indexes[1] == 2);
-    assert(list3->m_head->m_helper_indexes[2] == 3);
+    assert(strcmp(list3->m_head->m_prog_type_name, "test") == 0);
+    assert(list3->m_head->m_allowed_helper_indexes != nullptr);
+    assert(list3->m_head->m_allowed_helper_indexes[0] == 1);
+    assert(list3->m_head->m_allowed_helper_indexes[1] == 2);
+    assert(list3->m_head->m_allowed_helper_indexes[2] == 3);
 
     assert(list3->m_tail->m_next == nullptr);
     assert(list3->m_tail->m_length == 0);
-    assert(strcmp(list3->m_tail->m_group_name, "test2") == 0);
-    assert(list3->m_tail->m_helper_indexes == nullptr);
+    assert(strcmp(list3->m_tail->m_prog_type_name, "test2") == 0);
+    assert(list3->m_tail->m_allowed_helper_indexes == nullptr);
 
-    auto *list4 = unmarshall_bpf_helper_groups("test:;test2:4,5,6");
+    auto *list4 = unmarshall_bpf_prog_types("test:;test2:4,5,6");
     assert(list4 != nullptr);
     assert(list4->m_head != nullptr);
     assert(list4->m_tail != nullptr);
@@ -563,25 +563,25 @@ void assert_unmarshal_accept_empty_group() {
 
     assert(list4->m_head->m_next == list4->m_tail);
     assert(list4->m_head->m_length == 0);
-    assert(strcmp(list4->m_head->m_group_name, "test") == 0);
-    assert(list4->m_head->m_helper_indexes == nullptr);
+    assert(strcmp(list4->m_head->m_prog_type_name, "test") == 0);
+    assert(list4->m_head->m_allowed_helper_indexes == nullptr);
 
     assert(list4->m_tail->m_next == nullptr);
     assert(list4->m_tail->m_length == 3);
-    assert(strcmp(list4->m_tail->m_group_name, "test2") == 0);
-    assert(list4->m_tail->m_helper_indexes != nullptr);
-    assert(list4->m_tail->m_helper_indexes[0] == 4);
-    assert(list4->m_tail->m_helper_indexes[1] == 5);
-    assert(list4->m_tail->m_helper_indexes[2] == 6);
+    assert(strcmp(list4->m_tail->m_prog_type_name, "test2") == 0);
+    assert(list4->m_tail->m_allowed_helper_indexes != nullptr);
+    assert(list4->m_tail->m_allowed_helper_indexes[0] == 4);
+    assert(list4->m_tail->m_allowed_helper_indexes[1] == 5);
+    assert(list4->m_tail->m_allowed_helper_indexes[2] == 6);
 
-    helper_group_destroy(list);
-    helper_group_destroy(list2);
-    helper_group_destroy(list3);
-    helper_group_destroy(list4);
+    bpf_prog_type_list_destroy(list);
+    bpf_prog_type_list_destroy(list2);
+    bpf_prog_type_list_destroy(list3);
+    bpf_prog_type_list_destroy(list4);
 }
 
-void assert_unmarshal_group_name_w_slash() {
-    auto *list = unmarshall_bpf_helper_groups("test/:1,2,3");
+void assert_unmarshal_prog_type_name_w_slash() {
+    auto *list = unmarshall_bpf_prog_types("test/:1,2,3");
     assert(list != nullptr);
     assert(list->m_head != nullptr);
     assert(list->m_tail != nullptr);
@@ -589,70 +589,70 @@ void assert_unmarshal_group_name_w_slash() {
 
     assert(list->m_tail->m_next == nullptr);
     assert(list->m_tail->m_length == 3);
-    assert(strcmp(list->m_tail->m_group_name, "test/") == 0);
+    assert(strcmp(list->m_tail->m_prog_type_name, "test/") == 0);
     for (size_t index = 0; index < list->m_tail->m_length; index++) {
-        assert(list->m_tail->m_helper_indexes[index] == index + 1);
+        assert(list->m_tail->m_allowed_helper_indexes[index] == index + 1);
     }
 
-    helper_group_destroy(list);
+    bpf_prog_type_list_destroy(list);
 }
 
-void assert_unmarshal_group_reject_empty_group_name() {
-    auto *list = unmarshall_bpf_helper_groups("test/:1,2,3;:4,5,6");
+void assert_unmarshal_prog_type_reject_empty_prog_type_name() {
+    auto *list = unmarshall_bpf_prog_types("test/:1,2,3;:4,5,6");
     assert(list == nullptr);
 
-    auto *list2 = unmarshall_bpf_helper_groups("test/:1,2,3;:");
+    auto *list2 = unmarshall_bpf_prog_types("test/:1,2,3;:");
     assert(list2 == nullptr);
 }
 
-void assert_unmarshal_group_reject_empty_helper_index() {
-    auto *list = unmarshall_bpf_helper_groups("test:1,2,3;test2:,");
+void assert_unmarshal_prog_type_reject_empty_helper_index() {
+    auto *list = unmarshall_bpf_prog_types("test:1,2,3;test2:,");
     assert(list == nullptr);
 
-    auto *list2 = unmarshall_bpf_helper_groups("test:1,2,;test2:,");
+    auto *list2 = unmarshall_bpf_prog_types("test:1,2,;test2:,");
     assert(list2 == nullptr);
 
-    auto *list3 = unmarshall_bpf_helper_groups("test:1,,3;test2:,");
+    auto *list3 = unmarshall_bpf_prog_types("test:1,,3;test2:,");
     assert(list3 == nullptr);
 }
 
-void assert_unmarshal_group_reject_invalid_group_name() {
-    auto *list = unmarshall_bpf_helper_groups("test::1,2,3");
+void assert_unmarshal_prog_type_reject_invalid_prog_type_name() {
+    auto *list = unmarshall_bpf_prog_types("test::1,2,3");
     assert(list == nullptr);
 
-    list = unmarshall_bpf_helper_groups(":test::1,2,3");
+    list = unmarshall_bpf_prog_types(":test::1,2,3");
     assert(list == nullptr);
 
-    list = unmarshall_bpf_helper_groups(":");
+    list = unmarshall_bpf_prog_types(":");
     assert(list == nullptr);
 
-    list = unmarshall_bpf_helper_groups("test,:1,2,3");
+    list = unmarshall_bpf_prog_types("test,:1,2,3");
     assert(list == nullptr);
 
-    list = unmarshall_bpf_helper_groups(",test:1,2,3");
+    list = unmarshall_bpf_prog_types(",test:1,2,3");
     assert(list == nullptr);
 
-    list = unmarshall_bpf_helper_groups("test;test2:1,2,3");
-    assert(list == nullptr);
-}
-
-void assert_unmarshal_group_reject_invalid_EOF() {
-    auto *list = unmarshall_bpf_helper_groups("test:1,2,3;");
-    assert(list == nullptr);
-
-    list = unmarshall_bpf_helper_groups("test");
+    list = unmarshall_bpf_prog_types("test;test2:1,2,3");
     assert(list == nullptr);
 }
 
-void assert_unmarshal_group_reject_invalid_helper_index() {
-    auto *list = unmarshall_bpf_helper_groups("test:1,x,3");
+void assert_unmarshal_prog_type_reject_invalid_EOF() {
+    auto *list = unmarshall_bpf_prog_types("test:1,2,3;");
     assert(list == nullptr);
 
-    list = unmarshall_bpf_helper_groups("test:1,aaaaaaaa,3");
+    list = unmarshall_bpf_prog_types("test");
+    assert(list == nullptr);
+}
+
+void assert_unmarshal_prog_type_reject_invalid_helper_index() {
+    auto *list = unmarshall_bpf_prog_types("test:1,x,3");
+    assert(list == nullptr);
+
+    list = unmarshall_bpf_prog_types("test:1,aaaaaaaa,3");
     assert(list != nullptr);
-    helper_group_destroy(list);
+    bpf_prog_type_list_destroy(list);
 
-    list = unmarshall_bpf_helper_groups("test:1,aaaaaaaaa,3");
+    list = unmarshall_bpf_prog_types("test:1,aaaaaaaaa,3");
     assert(list == nullptr);
 }
 
@@ -677,24 +677,24 @@ int main() {
     assert_reject_invalid_arg_type();
     assert_reject_invalid_index();
 
-    // helper group list tests
-    assert_empty_group_list();
-    assert_null_group_list();
-    assert_group_list_w_one_element();
-    assert_group_list_w_multi_element();
+    // helper prog_type list tests
+    assert_empty_prog_type_list();
+    assert_null_prog_type_list();
+    assert_prog_type_list_w_one_element();
+    assert_prog_type_list_w_multi_element();
 
-    assert_unmarshal_empty_group();
-    assert_unmarshal_group_null();
-    assert_unmarshal_group_w_one();
-    assert_unmarshal_group_w_multi();
-    assert_unmarshal_group_name_w_slash();
-    assert_unmarshal_accept_empty_group();
+    assert_unmarshal_empty_prog_type();
+    assert_unmarshal_prog_type_null();
+    assert_unmarshal_prog_type_w_one();
+    assert_unmarshal_prog_type_w_multi();
+    assert_unmarshal_prog_type_name_w_slash();
+    assert_unmarshal_accept_empty_prog_type();
 
-    assert_unmarshal_group_reject_empty_group_name();
-    assert_unmarshal_group_reject_empty_helper_index();
-    assert_unmarshal_group_reject_invalid_group_name();
-    assert_unmarshal_group_reject_invalid_EOF();
-    assert_unmarshal_group_reject_invalid_helper_index();
+    assert_unmarshal_prog_type_reject_empty_prog_type_name();
+    assert_unmarshal_prog_type_reject_empty_helper_index();
+    assert_unmarshal_prog_type_reject_invalid_prog_type_name();
+    assert_unmarshal_prog_type_reject_invalid_EOF();
+    assert_unmarshal_prog_type_reject_invalid_helper_index();
 
     exit(EXIT_SUCCESS);
 }
