@@ -1,8 +1,6 @@
 #include "uk_bpf_helper_utils.h"
-#include "helper_function_list.h"
 
 #include <stdlib.h>
-#include <stdio.h>
 
 // Adapted from
 // https://github.com/bminor/newlib/blob/master/newlib/libc/stdlib/utoa.c
@@ -34,11 +32,11 @@ static char *utoa_16(unsigned value, char *str) {
 
 void marshall_bpf_helper_definitions(HelperFunctionList *instance,
                                      void (*append_result)(const char *)) {
-    // for hex number in the 64 bit space, max length of an integer is 16
-    if(instance == NULL) {
+    if (instance == NULL) {
         return;
     }
 
+    // for hex number in the 64 bit space, max length of an integer is 16
     char buffer[16 + 1];
 
     for (HelperFunctionEntry *entry = instance->m_head; entry != NULL;
@@ -49,7 +47,7 @@ void marshall_bpf_helper_definitions(HelperFunctionList *instance,
 
         append_result(entry->m_function_signature.m_function_name);
         append_result(UK_BPF_HELPER_DEFINITION_ARGUMENT_TYPE_START);
-        for (int index = 0;
+        for (size_t index = 0;
              index < entry->m_function_signature.m_num_args; index++) {
             utoa_16(entry->m_function_signature.m_arg_types[index],
                     buffer);
@@ -192,20 +190,13 @@ HelperFunctionList *unmarshall_bpf_helper_definitions(const char *input) {
                         continue;
                     }
 
-                    uk_ebpf_argument_type_t *dummy_args = calloc(
-                            num_args, sizeof(uk_ebpf_argument_type_t));
-                    if (dummy_args == NULL) {
-                        state = STATE_ERROR;
-                        continue;
-                    }
-
                     // create a new entry, put the function name in
                     // it
                     buffer[index] = '\0';
 
                     if (!helper_function_list_emplace_back(
                             instance, helper_index, &buffer[pointer], NULL, 0,
-                            num_args, dummy_args)) {
+                            num_args, NULL)) {
                         state = STATE_ERROR;
                         continue;
                     }
@@ -362,6 +353,196 @@ HelperFunctionList *unmarshall_bpf_helper_definitions(const char *input) {
 
     if (state != STATE_END) {
         helper_function_list_destroy(instance);
+        return NULL;
+    }
+
+    return instance;
+}
+
+void marshall_bpf_helper_groups(HelperGroupList *instance,
+                                void (*append_result)(const char *)) {
+    if (instance == NULL) {
+        return;
+    }
+
+    // for hex number in the 64 bit space, max length of an integer is 16
+    char buffer[sizeof(UK_UBPF_INDEX_t) * 2 + 1];
+
+    for (HelperGroupListEntry *entry = instance->m_head; entry != NULL;
+         entry = entry->m_next) {
+        append_result(entry->m_group_name);
+        append_result(UK_BPF_HELPER_GROUP_START_INDICATOR);
+
+
+        for (size_t index = 0; index < entry->m_length; index++) {
+            utoa_16(entry->m_helper_indexes[index], buffer);
+            append_result(buffer);
+
+            if (index != entry->m_length - 1) {
+                append_result(
+                        UK_BPF_HELPER_GROUP_ELEMENT_SPLIT);
+            }
+        }
+
+        if (entry->m_next != NULL) {
+            append_result(UK_BPF_HELPER_GROUP_SPLIT);
+        }
+    }
+}
+
+static size_t peek_group_element_number(const char *input) {
+    size_t result = 0;
+
+    size_t index = 0;
+    for (; input[index] != '\0' && input[index] != UK_BPF_HELPER_GROUP_SPLIT[0]; index++) {
+        if (input[index] == UK_BPF_HELPER_GROUP_ELEMENT_SPLIT[0]) {
+            result++;
+        } else if (!is_hex_digit(input[index])) {
+            return -1;
+        }
+    }
+
+    if (index > 1) {
+        result++; // add the last argument
+    }
+
+    return result;
+}
+
+#define GROUP_STATE_ERROR (-1)
+#define GROUP_STATE_GROUP_NAME 0
+#define GROUP_STATE_GROUP_ELEMENT 1
+#define GROUP_STATE_END 5
+
+HelperGroupList *unmarshall_bpf_helper_groups(const char *input) {
+    if (input == NULL) {
+        return NULL;
+    }
+
+    const size_t input_length = strlen(input);
+
+    char *buffer = malloc(input_length + 1);
+    if (buffer == NULL) {
+        return NULL;
+    }
+    strncpy(buffer, input, input_length + 1);
+
+    HelperGroupList *instance = helper_group_list_init();
+    if (instance == NULL) {
+        free(buffer);
+        return NULL;
+    }
+
+    if (input_length == 0) {
+        free(buffer);
+        return instance;
+    }
+
+    size_t buffer_length = input_length;
+
+    int state = GROUP_STATE_GROUP_NAME;
+    size_t pointer = 0;
+    size_t helper_indexer = 0;
+    for (size_t index = 0; index < buffer_length + 1; index++) {
+        switch (state) {  // NOLINT(hicpp-multiway-paths-covered)
+            case STATE_ERROR: // error state, destroy the instance and
+                // return NULL
+                goto escape_for;
+            case GROUP_STATE_GROUP_NAME:
+                printf("TEST GROUP_STATE_GROUP_NAME %c\n", buffer[index]);
+                if (buffer[index] == UK_BPF_HELPER_GROUP_START_INDICATOR[0]) {
+                    if (index - pointer == 0) {
+                        // empty group name
+                        printf("TEST empty group name\n");
+                        state = GROUP_STATE_ERROR;
+                        continue;
+                    }
+
+                    // get pointer -> index - 1 as group name
+                    buffer[index] = '\0';
+
+
+                    size_t element_number;
+                    if (buffer[index + 1] == '\0') {
+                        element_number = 0;
+                    } else {
+                        element_number = peek_group_element_number(&buffer[index + 1]);
+
+                        if (element_number == -1) {
+                            printf("TEST element_number = -1\n");
+                            state = GROUP_STATE_ERROR;
+                            continue;
+                        }
+                    }
+
+                    helper_group_list_emplace_back(instance, &buffer[pointer], element_number, NULL);
+
+                    pointer = index + 1; // skip the UK_BPF_HELPER_GROUP_START_INDICATOR
+                    helper_indexer = 0;
+                    state = GROUP_STATE_GROUP_ELEMENT;
+
+                } else if (buffer[index] == UK_BPF_HELPER_GROUP_ELEMENT_SPLIT[0] ||
+                           buffer[index] == UK_BPF_HELPER_GROUP_SPLIT[0]) {
+                    printf("TEST invalid group name\n");
+                    state = GROUP_STATE_ERROR;
+                }
+
+                break;
+
+            case GROUP_STATE_GROUP_ELEMENT:
+                printf("TEST GROUP_STATE_GROUP_ELEMENT %c\n", buffer[index]);
+
+                if (buffer[index] == UK_BPF_HELPER_GROUP_ELEMENT_SPLIT[0] ||
+                    buffer[index] == UK_BPF_HELPER_GROUP_SPLIT[0] ||
+                    buffer[index] == '\0') {
+
+                    char current_token = buffer[index];
+                    buffer[index] = '\0';
+
+                    if (helper_indexer != 0 ||
+                        (current_token != UK_BPF_HELPER_GROUP_SPLIT[0] && current_token != '\0')) {
+                        // the group element list is not empty
+
+                        if (index - pointer == 0 || index - pointer > sizeof(UK_UBPF_INDEX_t) * 2) {
+                            // empty helper function index
+                            printf("TEST empty helper function index %d %d\n", instance->m_tail->m_length,
+                                   current_token != UK_BPF_HELPER_GROUP_SPLIT[0]);
+                            state = GROUP_STATE_ERROR;
+                            continue;
+                        }
+
+                        instance->m_tail->m_helper_indexes[helper_indexer] = strtol(&buffer[pointer], NULL,
+                                                                                    16);
+                        helper_indexer++;
+                    }
+
+                    pointer = index + 1;
+
+                    if (current_token == UK_BPF_HELPER_GROUP_SPLIT[0]) {
+                        state = GROUP_STATE_GROUP_NAME;
+                    } else if (current_token == '\0') {
+                        state = GROUP_STATE_END;
+                    }
+                }
+
+                break;
+            case GROUP_STATE_END:
+                if (buffer[index] != '\0') {
+                    state = GROUP_STATE_ERROR;
+                    continue;
+                }
+
+                break;
+        }
+    }
+
+    escape_for:
+
+    free(buffer);
+
+    if (state != GROUP_STATE_END) {
+
+        helper_group_destroy(instance);
         return NULL;
     }
 
